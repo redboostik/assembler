@@ -6,7 +6,30 @@
 	erBig db "wrong input (so big number)", 0dh, 0ah, "$"
 	erChar db "wrong input (not a number)", 0dh, 0ah, "$"
 	erDivZero db "Divide by Zero", 0dh, 0ah, "$"
+	sRes db "Result: $"
+	sMod db , 0dh, 0ah,"Mod: $"
 .code
+
+
+
+delChar proc
+	push ax
+	push dx
+	xor ax, ax
+	xor dx, dx
+	mov ah, 2
+	mov dl, 8
+	int 21h
+	mov dl, ' '
+	int 21h
+	mov dl, 8
+	int 21h
+	pop dx
+	pop ax
+	ret
+delChar endp
+
+
 
 outAX proc 
 
@@ -50,6 +73,9 @@ inAX proc
 	
 		mov ah, 8
 		int 21h
+		mov ah, 2
+		mov dl, al
+		int 21h
 		xor ah, ah
 		cmp al, 13
 		jz fNE
@@ -64,6 +90,7 @@ inAX proc
 		cmp cx,	228
 		jz exit
 		pop cx
+		
 		
 		
 		sub al, '0'
@@ -83,12 +110,23 @@ inAX proc
 		jmp fEnter
 		
 	fBS:
+		mov ah, 2
+		mov dl, ' '
+		int 21h
+		xor dx, dx 
 		mov ax, cx
 		mov bx, 10
 		div bx
 		mov cx, ax
+		call delChar
 		jmp fEnter
 	fE:
+		push cx
+		mov cx, 10
+		f1:
+			call delChar
+		loop f1
+		pop cx
 		xor ax, ax
 		xor bx, bx
 		xor cx, cx
@@ -166,20 +204,33 @@ main:
 		cmp cx, 228
 		jz trAg2
 		
-		xor dx, dx
-		mov cx, ax
-		mov ax, bx
-		mov bx, cx
-		
-		cmp bx, 0
-		jz DZ
-		
-		div bx
-		
-		call outAX
+	xor dx, dx
+	mov cx, ax
+	mov ax, bx
+	mov bx, cx
 	
+	cmp bx, 0
+	jz DZ
+	mov cx, ax
+	mov ah, 09h
+	lea dx, sRes
+	int 21h
+	xor dx, dx
+	mov ax, cx
+	div bx
+	mov bx, dx
+
+	call outAX
+	mov ah, 09h
+	lea dx, sMod
+	int 21h
+	mov ax, bx
+	call outAX
+	mov ah, 8
+	int 21h
 	mov ax, 4c00h
 	int 21h
+
 	DZ:
 		mov ah, 09h
 		lea dx, erDivZero
