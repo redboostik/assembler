@@ -3,12 +3,12 @@
 .data
 	sEnter1 db "Enter first number", 0dh, 0ah, "$" 
 	sEnter2 db "Enter second number", 0dh, 0ah, "$"
-	erBig db "wrong input (so big number)", 0dh, 0ah, "$"
+	erBig db 0dh, 0ah,"wrong input (so big number)", 0dh, 0ah, "$"
 	erDivZero db "Divide by Zero", 0dh, 0ah, "$"
 	sRes db "Result: $"
 	sMod db , 0dh, 0ah,"Mod: $"
 .code
-
+.386
 
 
 delChar proc
@@ -36,17 +36,31 @@ outAX proc
 	push bx
 	push cx
 	push dx
+
+	cmp ax, 32768
+	jc nMinus
+		mov cx, ax
+		not cx
+		cmp cx, 0
+		jz ze
+		mov ah, 2
+		mov dx, '-'
+		int 21h
+		ze:
+		mov ax, cx
+	nMinus:
+
 	mov bx, 10
 	mov cx, 0
 	flagdiv:
-	mov dx, 0
-	
-	div bx
-	add dx, '0'
-	push dx
-	
-	inc cx
-	
+		mov dx, 0
+		
+		div bx
+		add dx, '0'
+		push dx
+		
+		inc cx
+		
 	test ax, ax 
 	jnz flagdiv
 	
@@ -82,7 +96,8 @@ inAX proc
 		jz fBS
 		cmp al, 27
 		jz fE
-		
+		cmp al, 45
+		jz fM1
 		
 		push cx
 		call check
@@ -91,31 +106,69 @@ inAX proc
 		pop cx
 		
 		
-		
-		sub al, '0'
-		xor bx, bx
-		mov bx, ax
-		mov ax, cx
-		mov cx, bx
-		mov bx, 10
-		mul bx
-		add ax, cx
-		jc errBig
-		cmp dl, 0
-		jnz errBig		
-		
+		cmp cx, 32768
+		jc notMin
+			not cx
+			sub al, '0'
+			xor bx, bx
+			mov bx, ax
+			mov ax, cx
+			mov cx, bx
+			mov bx, 10
+			mul bx
+			add ax, cx
+			jc errBig
+			cmp dl, 0
+			jnz errBig
+			cmp ax, 32768
+			jc noBigM
+				jmp errbig
+			noBigM:
+			mov cx, ax
+			not cx
+			jmp min	
+			fM1:
+				jmp fM
+		notMin:
+			sub al, '0'
+			xor bx, bx
+			mov bx, ax
+			mov ax, cx
+			mov cx, bx
+			mov bx, 10
+			mul bx
+			add ax, cx
+			jc errBig
+			cmp dl, 0
+			jnz errBig	
+			cmp ax, 32768
+			jc noBig
+				jmp errbig
+			noBig:	
 		mov cx, ax
-		cmp cx, 0
-		jz fDel
+		min:
+	
 		jmp fEnter
-		fDel:
-			call delChar
-			jmp fEnter
 		
 	fBS:
 		mov ah, 2
 		mov dl, ' '
 		int 21h
+		cmp cx, 32768
+		jc fBSM
+			not cx
+			mov ax, cx
+			cmp ax, 0
+			jz trZ
+				xor dx, dx 
+				mov bx, 10
+				div bx
+				not ax
+				mov cx, ax
+				call delChar
+				jmp fEnter
+			trZ:
+		fBSM:
 		xor dx, dx 
 		mov ax, cx
 		mov bx, 10
@@ -135,6 +188,14 @@ inAX proc
 		xor cx, cx
 		xor dx, dx
 		jmp fEnter
+	fM:
+		cmp cx, 0
+		jz f2
+			push cx
+			jmp exit
+		f2:
+		not cx
+		jmp fEnter
 	fNE:
 	mov ax, cx
 	pop dx
@@ -152,8 +213,8 @@ inAX proc
 		mov cx, 228
 		ret
 	exit:
-		call delChar
 		pop cx
+		call delChar
 		jmp fEnter
 	
 inAX endp
@@ -166,6 +227,7 @@ check proc
 	jnc erNN
 	ret
 	erNN:
+		call delChar
 		mov cx, 228
 		ret
 
@@ -212,10 +274,48 @@ main:
 	mov ah, 09h
 	lea dx, sRes
 	int 21h
+
 	xor dx, dx
 	mov ax, cx
+	xor cx, cx
+	cmp ax, 32768
+	jc fNoMinSign1
+		not ax
+		add cx, 1
+	fNoMinSign1:
+	
+	cmp bx, 32768
+	jc fNoMinSign2
+		not bx
+		add cx, 2
+	fNoMinSign2:
+
 	div bx
+	
+	cmp cx, 1
+	jnz noMinusPlus
+		add ax, 1
+		not ax
+		mov cx, bx
+		sub cx, dx
+		mov dx, cx
+	noMinusPlus:
+
+	cmp cx, 2
+	jnz noPlusMinus
+		not ax
+	noPlusMinus:
+
+	cmp cx, 3
+	jnz noMinusMinus
+		add ax, 1
+		mov cx, bx
+		sub cx, dx
+		mov dx, cx
+	noMinusMinus:
+
 	mov bx, dx
+	xor cx, cx
 
 	call outAX
 	mov ah, 09h
