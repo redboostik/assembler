@@ -227,7 +227,6 @@ check proc
 	jnc erNN
 	ret
 	erNN:
-		call delChar
 		mov cx, 228
 		ret
 
