@@ -1,8 +1,9 @@
 Turbo Assembler  Version 4.0  Copyright (c) 1988, 1993 Borland International
 
 Assembling file:   MAIN.ASM
+*Warning* MAIN.ASM(91) Argument needs type override
 Error messages:    None
-Warning messages:  None
+Warning messages:  1
 Passes:            1
-Remaining memory:  466k
+Remaining memory:  467k
 

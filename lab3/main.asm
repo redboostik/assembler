@@ -1,11 +1,11 @@
 .model small
 .stack 100h
 .data
-	sEnter1 db "Enter first number", 0dh, 0ah, "$" 
-	sEnter2 db "Enter second number", 0dh, 0ah, "$"
-	erBig db 0dh, 0ah,"wrong input (so big number)", 0dh, 0ah, "$"
-	erDivZero db "Divide by Zero", 0dh, 0ah, "$"
-	sRes db "Result: $"
+	sEnter1 db 0dh, 0ah, "Enter first number", 0dh, 0ah, "$" 
+	sEnter2 db 0dh, 0ah, "Enter second number", 0dh, 0ah, "$"
+	erBig db 0dh, 0ah, "wrong input (so big number)", 0dh, 0ah, "$"
+	erDivZero db 0dh, 0ah, "Divide by Zero", 0dh, 0ah, "$"
+	sRes db 0dh, 0ah, "Result: $"
 	sMod db , 0dh, 0ah,"Mod: $"
 .code
 .386
@@ -89,6 +89,9 @@ inAX proc
 		mov ah, 2
 		mov dl, al
 		int 21h
+		cmp al , '0'
+		jz itIsZero
+		goBack:
 		xor ah, ah
 		cmp al, 13
 		jz fNE
@@ -197,6 +200,8 @@ inAX proc
 		not cx
 		jmp fEnter
 	fNE:
+	cmp cx, 0
+	jz fenter
 	mov ax, cx
 	pop dx
 	pop cx
@@ -216,7 +221,14 @@ inAX proc
 		pop cx
 		call delChar
 		jmp fEnter
-	
+	itIsZero:
+		cmp cx, 0
+		jnz goBack
+		pop dx
+		pop cx
+		pop bx
+		mov ax, 0
+		ret
 inAX endp
 
 check proc
@@ -224,7 +236,7 @@ check proc
 	cmp al, '0'
 	jc erNN
 	cmp al, '9'
-	jnc erNN
+	ja erNN
 	ret
 	erNN:
 		mov cx, 228
